@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0A0A0A">
+<title>MARATHON SBS</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:#0A0A0A;color:#fff;font-family:'DM Sans',sans-serif;max-width:520px;margin:0 auto;min-height:100vh}
+input:focus,textarea:focus{outline:none;border-color:rgba(255,255,255,0.3)!important}
+button{font-family:inherit;cursor:pointer}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+input[type=number]{-moz-appearance:textfield}
+textarea{font-family:inherit;resize:vertical}
+::-webkit-scrollbar{display:none}
+</style>
+</head>
+<body>
+<div id="a"></div>
+<script>
+var RND=2.5,TM_PCT=0.90,LO=4,HI=6,INC=0.02,DEC=-0.05;
+function rnd(v){return Math.round(v/RND)*RND}
+function calcTM(rm){return rnd(rm*TM_PCT)}
+function calcTgt(tm,i){return rnd(tm*i)}
+function sbsSt(done,goal){if(done===undefined||done==="")return null;var p=goal.split("-").map(Number);var lo=p[0],hi=p[1]||p[0];done=Number(done);if(done<lo)return{l:"TM falder",n:DEC};if(done>hi)return{l:"TM stiger",n:INC};return{l:"OK",n:0}}
+function nxtTM(tm,adj){return rnd(tm*(1+adj))}
+var PH=[{wk:14,ph:"Fundament",int:0.80,reps:3,rir:2,sg:"4-6"},{wk:15,ph:"Progression",int:0.85,reps:2,rir:2,sg:"4-6"},{wk:16,ph:"Intensitet",int:0.875,reps:2,rir:1,sg:"4-6"},{wk:17,ph:"Taper",int:0.775,reps:4,rir:3,sg:"2-4"},{wk:18,ph:"Minimal",int:0.70,reps:5,rir:2,sg:"2-3"}];
+function sessA(wk){var tp=wk>=17;return{day:"MANDAG",type:"FULL BODY A",ex:[{n:"Box Jumps",s:tp?"2x3":"3x3",cat:"POWER"},{n:"Back Squat",sbs:1,lift:"squat",cat:"STRENGTH"},{n:"KB Swings",s:tp?"1x8":"2x8",cat:"STRENGTH"},{n:"Bench Press",sbs:1,lift:"bench",cat:"STRENGTH",note:"Superset m/ pull-up"},{n:"Pull-up / Pulldown",s:tp?"3x6-8":"4x6-8",cat:"STRENGTH"},{n:"Tempo RDL (3s ecc.)",s:tp?"1x8":"2x8-10",cat:"ACC"},{n:"Calf Raise",s:"2x"+(tp?"8-10":"10-12"),cat:"ACC"},{n:"Pallof Press",s:"2x"+(tp?"8ea":"10ea"),cat:"ACC"}]}}
+function sessB(wk){var tp=wk>=17;return{day:"FREDAG",type:"FULL BODY B",ex:[{n:"Broad Jumps",s:tp?"2x3":"3x3",cat:"POWER"},{n:"Trap Bar DL",sbs:1,lift:"trapbar",cat:"STRENGTH"},{n:"Bulgarian Split Squat",s:tp?"1x6-8ea":"2x6-8ea",cat:"STRENGTH"},{n:"Incline Bench",sbs:1,lift:"incline",cat:"STRENGTH",note:"Superset m/ row"},{n:"DB Chest Supported Row",s:tp?"2x8-10":"3x8-10",cat:"STRENGTH"},{n:"Tibialis Raises",s:"2x15-20",cat:"ACC"},{n:"Copenhagen Plank",s:"2x20-30s ea",cat:"ACC"},{n:"DB Lateral Raises",s:tp?"1x12-15":"2x12-15",cat:"ACC"},{n:"Dead Bug",s:tp?"1x8ea":"2x8ea",cat:"ACC"}]}}
+var SK="msbs-v3";
+function LD(){try{return JSON.parse(localStorage.getItem(SK))||{}}catch(e){return{}}}
+function SV(){localStorage.setItem(SK,JSON.stringify({rm:RM,tm:TM,bw:BW,logs:LOGS,cwk:S.cwk}))}
+var S={vw:"dash",cwk:14,stype:""};
+var RM={squat:100,trapbar:130,bench:90,incline:70};
+var TM={squat:90,trapbar:117,bench:81,incline:63};
+var BW=95;var LOGS={};var SLOG={};
+var st=LD();if(st.rm)RM=st.rm;if(st.tm)TM=st.tm;if(st.bw)BW=st.bw;if(st.logs)LOGS=st.logs;if(st.cwk)S.cwk=st.cwk;
+function uSL(k,v){SLOG[k]=v}
+function E(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function doExport(){var b=new Blob([JSON.stringify({rm:RM,tm:TM,bw:BW,logs:LOGS},null,2)],{type:"application/json"});var u=URL.createObjectURL(b);var a=document.createElement("a");a.href=u;a.download="msbs-"+new Date().toISOString().slice(0,10)+".json";document.body.appendChild(a);a.click();document.body.removeChild(a)}
+function doImport(){var inp=document.createElement("input");inp.type="file";inp.accept=".json";inp.onchange=function(ev){var f=ev.target.files[0];if(!f)return;var rd=new FileReader();rd.onload=function(e){try{var d=JSON.parse(e.target.result);if(d.rm)RM=d.rm;if(d.tm)TM=d.tm;if(d.bw)BW=d.bw;if(d.logs)LOGS=d.logs;SV();R();alert("Importeret!")}catch(x){alert("Fejl")}};rd.readAsText(f)};inp.click()}
+function saveSess(){var wk="w"+S.cwk,sk=S.stype;if(!LOGS[wk])LOGS[wk]={};LOGS[wk][sk]=JSON.parse(JSON.stringify(SLOG));LOGS[wk][sk].at=new Date().toISOString();var sess=S.stype=="A"?sessA(S.cwk):sessB(S.cwk);var p=PH.find(function(x){return x.wk==S.cwk});sess.ex.forEach(function(ex){if(ex.sbs&&SLOG["sets_"+ex.lift]){var st=sbsSt(SLOG["sets_"+ex.lift],p.sg);if(st&&st.n!==0)TM[ex.lift]=nxtTM(TM[ex.lift],st.n)}});SV();S.vw="dash";R()}
+function R(){
+var v=S.vw,cwk=S.cwk,p=PH.find(function(x){return x.wk==cwk});
+var h='<div style="padding:20px 20px 0;border-bottom:1px solid rgba(255,255,255,0.08)">';
+h+='<div style="font-size:10px;letter-spacing:0.2em;color:#555;font-weight:600">SBS AUTOREGULERING</div>';
+h+='<div style="font-size:26px;font-weight:900;margin-top:2px">MARATHON SBS</div>';
+h+='<div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px">';
+h+='<div style="font-size:11px;color:#555;letter-spacing:0.1em">UGE 14-18 // 2 DAYS</div>';
+h+='<div style="font-size:11px;color:#fff;font-weight:700;background:#111;padding:3px 10px;border-radius:2px">UGE '+cwk+'</div></div>';
+h+='<div style="display:flex;gap:20px">';
+var tabs=[["dash","PROGRAM"],["session","SESSION"],["setup","SETUP"],["progress","PROGRESS"]];
+for(var ti=0;ti<tabs.length;ti++){var t=tabs[ti];h+='<button onclick="S.vw=\''+t[0]+'\';R()" style="background:none;border:none;padding-bottom:10px;color:'+(v==t[0]?'#fff':'#555')+';font-size:11px;font-weight:600;letter-spacing:0.12em;border-bottom:2px solid '+(v==t[0]?'#fff':'transparent')+'">'+t[1]+'</button>'}
+h+='</div></div>';
+if(v=="dash"){
+h+='<div style="padding:20px">';
+var days=Math.max(0,Math.ceil((new Date("2026-05-10")-new Date())/86400000));
+h+='<div style="text-align:center;padding:20px 0;border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:20px">';
+h+='<div style="font-size:48px;font-weight:900">'+days+'</div>';
+h+='<div style="font-size:10px;letter-spacing:0.2em;color:#555;font-weight:600">DAGE TIL MARATHON // 10. MAJ 2026</div></div>';
+h+='<div style="margin-bottom:20px"><div style="font-size:10px;letter-spacing:0.15em;color:#555;font-weight:600;margin-bottom:8px">'+p.ph.toUpperCase()+' // '+Math.round(p.int*100)+'% TM - '+p.reps+' reps - RIR '+p.rir+'</div>';
+h+='<div style="display:flex;gap:6px">';
+for(var pi=0;pi<PH.length;pi++){var pp=PH[pi];var sel=pp.wk==cwk;var dn=LOGS["w"+pp.wk];h+='<button onclick="S.cwk='+pp.wk+';SV();R()" style="flex:1;height:6px;border-radius:2px;border:none;cursor:pointer;background:'+(sel?'#fff':dn?'#4ade80':'#222')+'"></button>'}
+h+='</div><div style="display:flex;justify-content:space-between;margin-top:4px">';
+for(var pi=0;pi<PH.length;pi++){var pp=PH[pi];h+='<span onclick="S.cwk='+pp.wk+';SV();R()" style="font-size:9px;color:'+(pp.wk==cwk?'#fff':'#555')+';cursor:pointer;flex:1;text-align:center">U'+pp.wk+'</span>'}
+h+='</div></div>';
+var aL=LOGS["w"+cwk]&&LOGS["w"+cwk].A;var bL=LOGS["w"+cwk]&&LOGS["w"+cwk].B;
+h+='<div style="display:flex;gap:10px;margin-bottom:20px">';
+var cards=[["A","MANDAG","FULL BODY A","Squat - Bench - Post",aL],["B","FREDAG","FULL BODY B","Trap Bar - Incline - Prev",bL]];
+for(var ci=0;ci<cards.length;ci++){var c=cards[ci];
+h+='<button onclick="S.stype=\''+c[0]+'\';SLOG=LOGS[\'w'+cwk+'\']&&LOGS[\'w'+cwk+'\'][\''+c[0]+'\']?JSON.parse(JSON.stringify(LOGS[\'w'+cwk+'\'][\''+c[0]+'\'])):{};S.vw=\'session\';R()" style="flex:1;background:'+(c[4]?'rgba(74,222,128,0.04)':'#111')+';border:1px solid '+(c[4]?'rgba(74,222,128,0.15)':'rgba(255,255,255,0.06)')+';border-radius:2px;padding:14px;text-align:left">';
+h+='<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:11px;font-weight:800;letter-spacing:0.1em">SESSION '+c[0]+'</span>'+(c[4]?'<span style="font-size:11px;color:#4ade80">DONE</span>':'')+'</div>';
+h+='<div style="font-size:10px;color:#888">'+c[1]+' - '+c[2]+'</div>';
+h+='<div style="font-size:9px;color:#555;margin-top:4px">'+c[3]+'</div>';
+h+='<div style="font-size:10px;color:#fff;font-weight:700;margin-top:8px">'+(c[4]?'SE LOG':'START')+'</div></button>'}
+h+='</div>';
+h+='<div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:16px">';
+h+='<div style="font-size:10px;letter-spacing:0.15em;color:#555;font-weight:600;margin-bottom:10px">TRAINING MAX</div>';
+var lifts=[["squat","Back Squat"],["trapbar","Trap Bar DL"],["bench","Bench Press"],["incline","Incline Bench"]];
+for(var li=0;li<lifts.length;li++){var l=lifts[li];
+h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03)">';
+h+='<span style="font-size:12px;color:#999">'+l[1]+'</span>';
+h+='<div><span style="font-size:16px;font-weight:800">'+TM[l[0]]+'</span><span style="font-size:10px;color:#555"> kg &rarr; '+calcTgt(TM[l[0]],p.int)+' kg</span></div></div>'}
+h+='</div></div>'}
+if(v=="session"){
+var sess=S.stype=="A"?sessA(cwk):sessB(cwk);
+h+='<div style="padding:20px">';
+h+='<button onclick="S.vw=\'dash\';R()" style="background:none;border:none;color:#888;font-size:12px;font-weight:600;padding:0;margin-bottom:12px">&larr; Tilbage</button>';
+h+='<div style="font-size:10px;color:#555;letter-spacing:0.12em;font-weight:600">UGE '+cwk+' - '+p.ph.toUpperCase()+'</div>';
+h+='<div style="font-size:20px;font-weight:900;margin-bottom:16px">'+sess.day+' - '+sess.type+'</div>';
+var curCat="";
+for(var ei=0;ei<sess.ex.length;ei++){var ex=sess.ex[ei];
+if(ex.cat!=curCat){curCat=ex.cat;var cc=curCat=="POWER"?"#f0a030":curCat=="STRENGTH"?"#fff":"#666";
+h+='<div style="font-size:9px;letter-spacing:0.2em;color:'+cc+';font-weight:700;margin-top:16px;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.06)">'+curCat+'</div>'}
+if(ex.sbs){
+var tm=TM[ex.lift],tgt=calcTgt(tm,p.int);
+var sd=SLOG["sets_"+ex.lift];var status=sbsSt(sd,p.sg);
+var sc=!status?"#555":status.n>0?"#4ade80":status.n<0?"#e55":"#eab308";
+h+='<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04)">';
+h+='<div style="font-size:13px;font-weight:800">'+E(ex.n)+'<span style="font-size:9px;color:#888;margin-left:6px">SBS</span></div>';
+if(ex.note)h+='<div style="font-size:9px;color:#555;margin-top:2px">'+E(ex.note)+'</div>';
+h+='<div style="font-size:10px;color:#666;margin-top:4px">'+p.sg+' set x '+p.reps+' reps @ '+tgt+' kg ('+Math.round(p.int*100)+'% TM) RIR '+p.rir+'</div>';
+h+='<div style="display:flex;gap:8px;margin-top:8px;align-items:center">';
+h+='<div><div style="font-size:8px;color:#555;margin-bottom:2px">ACTUAL KG</div>';
+h+='<input type="number" value="'+E(SLOG["act_"+ex.lift]||tgt)+'" oninput="uSL(\'act_'+ex.lift+'\',this.value)" style="background:#111;border:1px solid rgba(255,255,255,0.08);border-radius:2px;color:#fff;padding:6px 8px;font-size:14px;font-weight:700;width:70px;text-align:center;font-family:inherit;box-sizing:border-box"></div>';
+h+='<div><div style="font-size:8px;color:#555;margin-bottom:2px">SETS DONE</div>';
+h+='<input type="number" value="'+E(sd||"")+'" oninput="uSL(\'sets_'+ex.lift+'\',this.value);R()" placeholder="'+p.sg+'" style="background:#111;border:1px solid rgba(255,255,255,0.08);border-radius:2px;color:#fff;padding:6px 8px;font-size:14px;font-weight:700;width:70px;text-align:center;font-family:inherit;box-sizing:border-box"></div>';
+h+='<div style="text-align:center"><div style="font-size:8px;color:#555;margin-bottom:2px">STATUS</div>';
+h+='<div style="font-size:13px;font-weight:800;color:'+sc+'">'+(status?status.l:"--")+'</div></div></div>';
+h+='<div style="display:flex;gap:4px;margin-top:6px">';
+for(var si=1;si<=6;si++){h+='<input type="number" value="'+E(SLOG[ex.lift+"_s"+si]||"")+'" oninput="uSL(\''+ex.lift+'_s'+si+'\',this.value)" placeholder="S'+si+'" style="flex:1;background:#111;border:1px solid rgba(255,255,255,0.04);border-radius:2px;color:#ccc;padding:4px 2px;font-size:9px;text-align:center;font-family:inherit;max-width:38px;box-sizing:border-box">'}
+h+='<span style="font-size:7px;color:#444;align-self:center">reps</span></div>';
+h+='</div>'}
+else{
+h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04)">';
+h+='<div><div style="font-size:12px;font-weight:600;color:#ccc">'+E(ex.n)+'</div>';
+h+='<div style="font-size:9px;color:#555">'+E(ex.s)+'</div></div>';
+if(ex.s&&ex.s.indexOf("x")>-1){h+='<input type="number" value="'+E(SLOG["wt_"+ex.n]||"")+'" oninput="uSL(\'wt_'+E(ex.n)+'\',this.value)" placeholder="kg" style="background:#111;border:1px solid rgba(255,255,255,0.06);border-radius:2px;color:#fff;padding:4px 6px;font-size:11px;width:55px;text-align:center;font-family:inherit;box-sizing:border-box">'}
+h+='</div>'}}
+h+='<div style="margin-top:20px"><div style="font-size:9px;letter-spacing:0.15em;color:#555;font-weight:600;margin-bottom:4px">NOTER</div>';
+h+='<textarea oninput="uSL(\'notes\',this.value)" placeholder="Energi, restitution..." style="width:100%;background:#111;border:1px solid rgba(255,255,255,0.06);border-radius:2px;padding:8px;color:#fff;font-size:11px;min-height:50px;box-sizing:border-box">'+(SLOG.notes||"")+'</textarea></div>';
+h+='<div style="margin-top:14px"><div style="font-size:9px;letter-spacing:0.15em;color:#555;font-weight:600;margin-bottom:6px">RESTITUTION (1-10)</div>';
+h+='<div style="display:flex;gap:4px">';
+for(var ri=1;ri<=10;ri++){var rc=SLOG.rec==ri?(ri<=3?"#e55":ri<=6?"#eab308":"#4ade80"):"#111";
+h+='<button onclick="uSL(\'rec\','+ri+');R()" style="flex:1;padding:6px 0;border:none;border-radius:2px;font-size:10px;font-weight:700;background:'+rc+';color:'+(SLOG.rec==ri?'#000':'#555')+'">'+ri+'</button>'}
+h+='</div></div>';
+h+='<button onclick="saveSess()" style="width:100%;padding:14px;border:none;border-radius:2px;font-size:13px;font-weight:800;letter-spacing:0.1em;background:#fff;color:#000;margin-top:20px">GEM SESSION</button>';
+h+='</div>'}
+if(v=="setup"){
+h+='<div style="padding:20px">';
+h+='<div style="font-size:10px;letter-spacing:0.15em;color:#555;font-weight:600;margin-bottom:16px">1RM OG TRAINING MAX</div>';
+var lifts=[["squat","Back Squat"],["trapbar","Trap Bar DL"],["bench","Bench Press"],["incline","Incline Bench"]];
+for(var li=0;li<lifts.length;li++){var l=lifts[li];
+h+='<div style="margin-bottom:14px;padding:12px;background:#111;border-radius:2px">';
+h+='<div style="font-size:12px;font-weight:700;margin-bottom:8px">'+l[1]+'</div>';
+h+='<div style="display:flex;gap:12px;align-items:center">';
+h+='<div><div style="font-size:8px;color:#888;margin-bottom:2px">1RM</div>';
+h+='<input type="number" value="'+RM[l[0]]+'" oninput="RM[\''+l[0]+'\']=Number(this.value)||0;TM[\''+l[0]+'\']=calcTM(RM[\''+l[0]+'\']);SV();R()" style="background:#0A0A0A;border:1px solid rgba(255,255,255,0.1);border-radius:2px;color:#fff;padding:6px 8px;font-size:16px;font-weight:700;width:75px;text-align:center;font-family:inherit;box-sizing:border-box"></div>';
+h+='<div><div style="font-size:8px;color:#888;margin-bottom:2px">TM</div>';
+h+='<input type="number" value="'+TM[l[0]]+'" oninput="TM[\''+l[0]+'\']=Number(this.value)||0;SV();R()" style="background:#0A0A0A;border:1px solid rgba(255,255,255,0.1);border-radius:2px;color:#fff;padding:6px 8px;font-size:16px;font-weight:700;width:75px;text-align:center;font-family:inherit;box-sizing:border-box"></div>';
+h+='<div style="font-size:9px;color:#555">'+Math.round(TM[l[0]]/(RM[l[0]]||1)*100)+'%</div>';
+h+='</div></div>'}
+h+='<div style="margin-top:20px;border-top:1px solid rgba(255,255,255,0.06);padding-top:16px">';
+h+='<div style="font-size:10px;letter-spacing:0.15em;color:#555;font-weight:600;margin-bottom:10px">SBS REGLER</div>';
+h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:10px">';
+h+='<div style="background:#111;padding:8px;border-radius:2px"><div style="color:#555;font-size:8px">Under</div><div style="color:#e55;font-weight:700">&lt;'+LO+' sets = TM -'+Math.abs(DEC*100)+'%</div></div>';
+h+='<div style="background:#111;padding:8px;border-radius:2px"><div style="color:#555;font-size:8px">Over</div><div style="color:#4ade80;font-weight:700">&gt;'+HI+' sets = TM +'+INC*100+'%</div></div></div></div>';
+h+='<div style="margin-top:20px;border-top:1px solid rgba(255,255,255,0.06);padding-top:16px">';
+h+='<div style="font-size:10px;letter-spacing:0.15em;color:#555;font-weight:600;margin-bottom:10px">BACKUP</div>';
+h+='<div style="display:flex;gap:10px">';
+h+='<button onclick="doExport()" style="flex:1;background:#fff;color:#000;border:none;border-radius:2px;padding:10px;font-size:10px;font-weight:700;letter-spacing:0.12em">EXPORT</button>';
+h+='<button onclick="doImport()" style="flex:1;background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.15);border-radius:2px;padding:10px;font-size:10px;font-weight:700;letter-spacing:0.12em">IMPORT</button></div></div>';
+h+='<button onclick="if(confirm(\'Reset?\')){RM={squat:100,trapbar:130,bench:90,incline:70};TM={squat:90,trapbar:117,bench:81,incline:63};LOGS={};SV();R()}" style="width:100%;margin-top:20px;padding:10px;background:transparent;border:1px solid rgba(255,0,0,0.15);border-radius:2px;color:#e55;font-size:10px;font-weight:600;letter-spacing:0.12em">RESET</button>';
+h+='</div>'}
+if(v=="progress"){
+h+='<div style="padding:20px">';
+h+='<div style="font-size:10px;letter-spacing:0.15em;color:#555;font-weight:600;margin-bottom:16px">WEIGHT PROGRESSION</div>';
+var plifts=[["squat","Back Squat","A"],["trapbar","Trap Bar DL","B"],["bench","Bench Press","A"],["incline","Incline Bench","B"]];
+for(var pli=0;pli<plifts.length;pli++){var pl=plifts[pli];
+h+='<div style="margin-bottom:16px"><div style="font-size:11px;color:#999;margin-bottom:4px">'+pl[1]+'</div>';
+h+='<div style="display:flex;gap:4px;align-items:flex-end;height:44px">';
+var mx=0;for(var mi=0;mi<PH.length;mi++){var pp=PH[mi];var vv=Number((LOGS["w"+pp.wk]&&LOGS["w"+pp.wk][pl[2]]&&LOGS["w"+pp.wk][pl[2]]["act_"+pl[0]])||0);if(vv>mx)mx=vv}
+for(var bi=0;bi<PH.length;bi++){var pp=PH[bi];var vv=Number((LOGS["w"+pp.wk]&&LOGS["w"+pp.wk][pl[2]]&&LOGS["w"+pp.wk][pl[2]]["act_"+pl[0]])||0);
+var ht=vv&&mx?(vv/mx)*36+4:3;var im=vv==mx&&vv>0;
+h+='<div style="flex:1;text-align:center"><div style="font-size:8px;color:'+(im?'#4ade80':'#555')+'">'+(vv||"")+'</div>';
+h+='<div style="height:'+ht+'px;background:'+(vv?im?'#4ade80':'rgba(255,255,255,0.12)':'#111')+';border-radius:2px 2px 0 0;margin:0 auto;max-width:24px"></div>';
+h+='<div style="font-size:7px;color:#444">U'+pp.wk+'</div></div>'}
+h+='</div></div>'}
+h+='<div style="margin-top:16px;border-top:1px solid rgba(255,255,255,0.06);padding-top:16px">';
+h+='<div style="font-size:10px;letter-spacing:0.15em;color:#555;font-weight:600;margin-bottom:8px">RESTITUTION</div>';
+h+='<div style="display:flex;gap:3px;align-items:flex-end;height:40px">';
+for(var ri=0;ri<PH.length;ri++){var pp=PH[ri];var ss=["A","B"];for(var si=0;si<ss.length;si++){var s=ss[si];
+var rv=LOGS["w"+pp.wk]&&LOGS["w"+pp.wk][s]&&LOGS["w"+pp.wk][s].rec;
+var rht=rv?rv*4:3;var rcl=rv?(rv<=3?"#e55":rv<=6?"#eab308":"#4ade80"):"#111";
+h+='<div style="flex:1;text-align:center"><div style="font-size:6px;color:#555">'+(rv||"")+'</div>';
+h+='<div style="height:'+rht+'px;background:'+rcl+';border-radius:2px 2px 0 0;margin:0 auto;max-width:16px"></div>';
+h+='<div style="font-size:6px;color:#444">'+pp.wk+s+'</div></div>'}}
+h+='</div></div>';
+h+='<div style="margin-top:16px;border-top:1px solid rgba(255,255,255,0.06);padding-top:16px">';
+h+='<div style="font-size:10px;letter-spacing:0.15em;color:#555;font-weight:600;margin-bottom:8px">NOTER</div>';
+var hasN=false;
+for(var ni=0;ni<PH.length;ni++){var pp=PH[ni];var ss=["A","B"];for(var si=0;si<ss.length;si++){var s=ss[si];
+var nt=LOGS["w"+pp.wk]&&LOGS["w"+pp.wk][s]&&LOGS["w"+pp.wk][s].notes;
+if(nt){hasN=true;h+='<div style="font-size:10px;margin-bottom:4px;padding:6px 8px;background:#111;border-radius:2px"><span style="color:#fff;font-weight:600">U'+pp.wk+s+': </span><span style="color:#888">'+E(nt)+'</span></div>'}}}
+if(!hasN)h+='<div style="font-size:10px;color:#444">Ingen noter endnu.</div>';
+h+='</div></div>'}
+h+='<div style="text-align:center;padding:32px 20px;font-size:9px;letter-spacing:0.18em;color:#222;font-weight:600">MARATHON SBS // Built for the long run.</div>';
+document.getElementById("a").innerHTML=h}
+R();
+</script>
+</body>
+</html>
